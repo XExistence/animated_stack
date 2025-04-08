@@ -1,6 +1,44 @@
 library animated_stack;
 
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+/// Controller to programmatically control the AnimatedStack state.
+class AnimatedStackController extends ChangeNotifier {
+  bool _isOpen = false;
+  bool get isOpen => _isOpen;
+
+  /// Opens the stack.
+  void open() {
+    if (!_isOpen) {
+      _isOpen = true;
+      notifyListeners();
+    }
+  }
+
+  /// Closes the stack.
+  void close() {
+    if (_isOpen) {
+      _isOpen = false;
+      notifyListeners();
+    }
+  }
+
+  /// Toggles the stack state (open/closed).
+  void toggle() {
+    _isOpen = !_isOpen;
+    notifyListeners();
+  }
+
+  /// Toggles the stack state (open/closed) after a specified delay in seconds.
+  Future<void> toggleWithDelay(double seconds) async {
+    await Future.delayed(Duration(milliseconds: (seconds * 1000).round()));
+    if (ChangeNotifier.debugAssertNotDisposed(this)) {
+      toggle();
+    }
+  }
+}
 
 class AnimatedStack extends StatefulWidget {
   final double scaleWidth;
@@ -20,6 +58,7 @@ class AnimatedStack extends StatefulWidget {
   final bool enableClickToDismiss;
   final bool preventForegroundInteractions;
   final Function(bool isOpen)? onCallback;
+  final AnimatedStackController? controller;
 
   const AnimatedStack({
     Key? key,
@@ -40,6 +79,7 @@ class AnimatedStack extends StatefulWidget {
     this.openAnimationCurve = const ElasticOutCurve(0.9),
     this.buttonAnimationDuration = const Duration(milliseconds: 240),
     this.slideAnimationDuration = const Duration(milliseconds: 800),
+    this.controller,
   })  : assert(scaleHeight >= 40, 'scaleHeight must be at least 40'),
         assert(!(enableClickToDismiss && !preventForegroundInteractions),
             'enableClickToDismiss can only be true if preventForegroundInteractions is also true'),
@@ -51,6 +91,87 @@ class AnimatedStack extends StatefulWidget {
 
 class _AnimatedStackState extends State<AnimatedStack> {
   bool opened = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize state based on controller if provided
+    opened = widget.controller?.isOpen ?? false;
+    // Listen to controller changes
+    widget.controller?.addListener(_handleControllerChanged);
+  }
+
+  @override
+  void didUpdateWidget(AnimatedStack oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If controller instance changes, update listeners and state
+    if (widget.controller != oldWidget.controller) {
+      oldWidget.controller?.removeListener(_handleControllerChanged);
+      widget.controller?.addListener(_handleControllerChanged);
+      // Update state if controller's state is different
+      if (widget.controller != null && opened != widget.controller!.isOpen) {
+        opened = widget.controller!.isOpen;
+        // No need to call setState here as build will happen anyway
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    // Remove listener on dispose
+    widget.controller?.removeListener(_handleControllerChanged);
+    super.dispose();
+  }
+
+  // Handles state changes triggered by the controller
+  void _handleControllerChanged() {
+    if (opened != widget.controller!.isOpen) {
+      setState(() {
+        opened = widget.controller!.isOpen;
+      });
+      // Callback is usually triggered by the action causing the change (press/tap/programmatic)
+      // But you might want it here too depending on use case:
+      // widget.onCallback?.call(opened);
+    }
+  }
+
+  // Toggles the state and updates the controller if present
+  void _toggleOpened() {
+    final newState = !opened;
+    if (widget.controller != null) {
+      // Let the controller manage the state change
+      if (newState) {
+        widget.controller!.open();
+      } else {
+        widget.controller!.close();
+      }
+    } else {
+      // Manage state internally if no controller
+      setState(() {
+        opened = newState;
+      });
+    }
+    // Always call the callback after initiating the change
+    widget.onCallback?.call(newState);
+  }
+
+  // Closes the state and updates the controller if present
+  void _closeOpened() {
+    final newState = false;
+    if (widget.controller != null) {
+      widget.controller!.close();
+    } else {
+      // Manage state internally if no controller
+      // Avoid calling setState if already closed
+      if (opened != newState) {
+        setState(() {
+          opened = newState;
+        });
+      }
+    }
+    // Always call the callback after initiating the change
+    widget.onCallback?.call(newState);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,10 +196,7 @@ class _AnimatedStackState extends State<AnimatedStack> {
           duration: widget.buttonAnimationDuration,
         ),
         backgroundColor: widget.fabBackgroundColor,
-        onPressed: () {
-          setState(() => opened = !opened);
-          widget.onCallback?.call(opened);
-        },
+        onPressed: _toggleOpened,
       ),
       body: Stack(
         children: <Widget>[
@@ -118,8 +236,7 @@ class _AnimatedStackState extends State<AnimatedStack> {
               behavior: HitTestBehavior.translucent,
               onTap: () {
                 if (widget.enableClickToDismiss && opened) {
-                  setState(() => opened = false);
-                  widget.onCallback?.call(opened);
+                  _closeOpened();
                 }
               },
               child: IgnorePointer(
