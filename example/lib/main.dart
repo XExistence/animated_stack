@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
         // Controllers
         enableClickToDismiss: true,
         preventForegroundInteractions: true,
-        onForegroundCallback: () => print('on Close Callback'),
+        onCallback: (isOpen) => print('on Callback $isOpen'),
       ),
     );
   }
