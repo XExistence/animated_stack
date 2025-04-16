@@ -26,17 +26,20 @@ class AnimatedStackController extends ChangeNotifier {
   }
 
   /// Toggles the stack state (open/closed).
-  void toggle() {
+  bool toggle() {
     _isOpen = !_isOpen;
     notifyListeners();
+    return _isOpen;
   }
 
   /// Toggles the stack state (open/closed) after a specified delay in seconds.
-  Future<void> toggleWithDelay(double seconds) async {
+  Future<bool?> toggleWithDelay(double seconds) async {
+    bool? isToggled;
     await Future.delayed(Duration(milliseconds: (seconds * 1000).round()));
     if (ChangeNotifier.debugAssertNotDisposed(this)) {
-      toggle();
+      isToggled = toggle();
     }
+    return isToggled;
   }
 }
 
