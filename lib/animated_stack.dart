@@ -51,6 +51,8 @@ class AnimatedStack extends StatefulWidget {
   final Widget bottomWidget;
   final Color fabBackgroundColor;
   final Color? fabIconColor;
+  final double? fabElevation;
+  final bool fabVisible;
   final Color backgroundColor;
   final Duration buttonAnimationDuration;
   final Duration slideAnimationDuration;
@@ -73,6 +75,8 @@ class AnimatedStack extends StatefulWidget {
     required this.foregroundWidget,
     required this.fabBackgroundColor,
     this.fabIconColor,
+    this.fabElevation,
+    this.fabVisible = true,
     this.onCallback,
     this.animateButton = true,
     this.buttonIcon = Icons.add,
@@ -189,18 +193,21 @@ class _AnimatedStackState extends State<AnimatedStack> {
         (widget.scaleHeight + _fabPosition * 2) * 100 / _height;
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        child: RotateAnimation(
-          opened: widget.animateButton ? opened : false,
-          child: Icon(
-            widget.buttonIcon,
-            color: widget.fabIconColor,
-          ),
-          duration: widget.buttonAnimationDuration,
-        ),
-        backgroundColor: widget.fabBackgroundColor,
-        onPressed: _toggleOpened,
-      ),
+      floatingActionButton: widget.fabVisible
+          ? FloatingActionButton(
+              child: RotateAnimation(
+                opened: widget.animateButton ? opened : false,
+                child: Icon(
+                  widget.buttonIcon,
+                  color: widget.fabIconColor,
+                ),
+                duration: widget.buttonAnimationDuration,
+              ),
+              backgroundColor: widget.fabBackgroundColor,
+              elevation: widget.fabElevation,
+              onPressed: _toggleOpened,
+            )
+          : null,
       body: Stack(
         children: <Widget>[
           Container(

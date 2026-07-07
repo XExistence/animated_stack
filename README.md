@@ -54,6 +54,8 @@ buttonIcon: ...,          // FAB icon (IconData)
 fabIconColor: ...,        // FAB icon color
 animateButton: false,     // Sometimes, we don't want to animate the button!
 fabBackgroundColor: ...,  // FAB background color
+fabElevation: 6,          // FAB elevation (z-height), default is theme default
+fabVisible: true,         // Show or hide the FAB, default is true
 
 slideAnimationDuration: ..., // Animation Duration, default is 800 Milliseconds
 buttonAnimationDuration: ...,// Animation Duration, default is 240 Milliseconds
